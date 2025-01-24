@@ -1,0 +1,5 @@
+gdal==3.10.0
+geopandas==1.0.1
+rasterio==1.4.3
+fiona==1.10.1
+shapely==2.0.6
