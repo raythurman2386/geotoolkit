@@ -1,11 +1,24 @@
+import json
 import os
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 from typing import Union, List, Optional
 from osgeo import gdal, ogr, osr
 import re
+
+from ... import setup_logger
 from ...core.base import BasePreprocessor
 from ...core.exceptions import ProcessingError
-from ... import logger
+from ...tools.spatial import SpatialReference
+from ...utils.read_epsg import get_epsg_code
+
+logger = setup_logger(
+    "csv_processor",
+    log_level="INFO",
+    log_dir=Path(__file__).parent / 'logs',
+)
 
 
 class GDALPreprocessor(BasePreprocessor):
@@ -13,6 +26,7 @@ class GDALPreprocessor(BasePreprocessor):
 
     def __init__(self):
         gdal.UseExceptions()  # Enable exception handling
+        self.spatial_ref = SpatialReference()
 
     def clean_field_names(self, dataset: Union[str, Path],
                           exclude_fields: Optional[List[str]] = None) -> Union[str, Path]:
@@ -67,88 +81,42 @@ class GDALPreprocessor(BasePreprocessor):
         except Exception as e:
             raise ProcessingError(f"Error cleaning field names: {str(e)}")
 
-    def standardize_projection(self, dataset: Union[str, Path],
-                               target_epsg: Union[int, str],
-                               in_place: bool = False) -> Union[str, Path]:
-        """
-        Reproject dataset using GDAL.
-        
-        Args:
-            dataset: Path to input dataset
-            target_epsg: Target EPSG code
-            in_place: Whether to modify the input dataset or create new one
-            
-        Returns:
-            Path to processed dataset
-        """
+
+    def standardize_projection(self, dataset: Union[str, Path], target_region: Union[str, int], in_place: bool = False) -> Union[str, Path]:
         try:
-            # Create output path if not in_place
-            input_path = str(dataset)
-            if not in_place:
-                output_path = str(Path(input_path).with_suffix('')) + '_reprojected.shp'
+            epsg_code = get_epsg_code(target_region)
+
+            input_path = Path(dataset)
+            if in_place:
+                # Create a temporary file
+                with tempfile.NamedTemporaryFile(delete=False, suffix=input_path.suffix) as tmp:
+                    temp_output = Path(tmp.name)
             else:
-                output_path = input_path
+                # Create output file with '_reprojected' suffix
+                temp_output = input_path.with_name(f"{input_path.stem}_reprojected{input_path.suffix}")
 
-            # Open input
-            ds = ogr.Open(input_path)
-            if ds is None:
-                raise ProcessingError(f"Could not open dataset: {input_path}")
+            # Set up ogr2ogr command
+            cmd = [
+                'ogr2ogr',
+                '-f', 'ESRI Shapefile' if input_path.suffix.lower() == '.shp' else 'GeoJSON',
+                '-s_srs', f'EPSG:{epsg_code}',
+                '-t_srs', f'EPSG:{epsg_code}',
+                str(temp_output),
+                str(input_path)
+            ]
 
-            # Get input spatial reference
-            layer = ds.GetLayer()
-            source_srs = layer.GetSpatialRef()
+            # Run ogr2ogr command
+            subprocess.run(cmd, check=True)
 
-            # Create target spatial reference
-            target_srs = osr.SpatialReference()
-            if isinstance(target_epsg, int):
-                target_srs.ImportFromEPSG(target_epsg)
+            if in_place:
+                # Replace the original file with the temporary file
+                shutil.move(str(temp_output), str(input_path))
+                return input_path
             else:
-                target_srs.ImportFromWkt(target_epsg)
-
-            # Create coordinate transformation
-            transform = osr.CoordinateTransformation(source_srs, target_srs)
-
-            # Create output dataset
-            driver = ogr.GetDriverByName("ESRI Shapefile")
-            if not in_place:
-                if os.path.exists(output_path):
-                    driver.DeleteDataSource(output_path)
-                out_ds = driver.CreateDataSource(output_path)
-
-                # Create output layer
-                out_layer = out_ds.CreateLayer(
-                    layer.GetName(),
-                    target_srs,
-                    layer.GetGeomType()
-                )
-
-                # Copy fields
-                layer_defn = layer.GetLayerDefn()
-                for i in range(layer_defn.GetFieldCount()):
-                    out_layer.CreateField(layer_defn.GetFieldDefn(i))
-
-                # Process features
-                for feature in layer:
-                    geom = feature.GetGeometryRef()
-                    geom.Transform(transform)
-
-                    out_feature = ogr.Feature(out_layer.GetLayerDefn())
-                    out_feature.SetGeometry(geom)
-
-                    for i in range(layer_defn.GetFieldCount()):
-                        out_feature.SetField(i, feature.GetField(i))
-
-                    out_layer.CreateFeature(out_feature)
-                    out_feature = None
-
-                out_ds = None
-                ds = None
-
-            logger.info(f"Reprojected {dataset} to EPSG:{target_epsg}")
-            return output_path
+                return temp_output
 
         except Exception as e:
-            raise ProcessingError(f"Error reprojecting dataset: {str(e)}")
+            raise RuntimeError(f"Error during reprojection: {str(e)}")
 
     def repair_geometry(self, dataset: Union[str, Path],
                         in_place: bool = False) -> Union[str, Path]:

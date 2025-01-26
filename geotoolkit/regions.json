@@ -1,0 +1,26 @@
+{
+"NAD83": {
+"name": "NAD83",
+"epsg": 4269,
+"proj4": "+proj=longlat +datum=NAD83 +no_defs",
+"description": "North American Datum 1983"
+},
+"WGS84": {
+"name": "WGS84",
+"epsg": 4326,
+"proj4": "+proj=longlat +datum=WGS84 +no_defs",
+"description": "World Geodetic System 1984"
+},
+"NAD83_UTM_13N": {
+"name": "NAD83 UTM Zone 13N",
+"epsg": 26913,
+"proj4": "+proj=utm +zone=13 +datum=NAD83 +units=m +no_defs",
+"description": "NAD83 UTM Zone 13N"
+},
+"WEB_MERCATOR": {
+"name": "Web Mercator",
+"epsg": 3857,
+"proj4": "+proj=merc +a=6378137 +b=6378137 +lat_ts=0 +lon_0=0 +x_0=0 +y_0=0 +k=1 +units=m +nadgrids=@null +wktext +no_defs",
+"description": "Web Mercator (Auxiliary Sphere)"
+}
+}

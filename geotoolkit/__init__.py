@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from .utils.config import ConfigManager
 from .utils.logger import setup_logger
 from .engines.gdal_engine.preprocessor import GDALPreprocessor
-from .engines.arcpy_engine.preprocessor import ArcPyPreprocessor
 
 
 class Preprocessor:
@@ -27,8 +26,6 @@ class PreprocessorFactory:
     def create(engine: str):
         if engine.lower() == 'gdal':
             return GDALPreprocessor()
-        elif engine.lower() == 'arcpy':
-            return ArcPyPreprocessor()
         else:
             raise ValueError(f"Unsupported engine: {engine}")
 

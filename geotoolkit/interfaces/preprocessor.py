@@ -1,5 +1,4 @@
 from ..core.exceptions import EngineNotFoundError
-from ..engines.arcpy_engine.preprocessor import ArcPyPreprocessor
 from ..engines.gdal_engine.preprocessor import GDALPreprocessor
 
 
@@ -9,18 +8,11 @@ class Preprocessor:
 
     def _initialize_engine(self, engine):
         if engine == 'auto':
-            # Try to detect available engines
             try:
-                import arcpy
-                return ArcPyPreprocessor()
+                from osgeo import gdal
+                return GDALPreprocessor()
             except ImportError:
-                try:
-                    from osgeo import gdal
-                    return GDALPreprocessor()
-                except ImportError:
-                    raise EngineNotFoundError("No supported GIS engine found")
-        elif engine == 'arcpy':
-            return ArcPyPreprocessor()
+                raise EngineNotFoundError("No supported GIS engine found")
         elif engine == 'gdal':
             return GDALPreprocessor()
         else:
