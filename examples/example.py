@@ -9,5 +9,8 @@ initialize(
 )
 
 preprocessor = Preprocessor(engine='gdal')
-result = preprocessor.clean_field_names("volcanoes.geojson")
-projection = preprocessor.standardize_projection(result, "WGS84", False)
+file = "route_66.shp"
+result = preprocessor.clean_field_names(file)
+projection = preprocessor.standardize_projection(result, 4326, False)
+geometry = preprocessor.repair_geometry(projection, False)
+correct_geom = preprocessor.ensure_2d_geometry(geometry, False)

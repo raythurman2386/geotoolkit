@@ -1,8 +1,3 @@
-import json
-import os
-import shutil
-import subprocess
-import tempfile
 from pathlib import Path
 from typing import Union, List, Optional
 from osgeo import gdal, ogr, osr
@@ -15,7 +10,7 @@ from ...tools.spatial import SpatialReference
 from ...utils.read_epsg import get_epsg_code
 
 logger = setup_logger(
-    "csv_processor",
+    "gdal_processor",
     log_level="INFO",
     log_dir=Path(__file__).parent / 'logs',
 )
@@ -25,7 +20,7 @@ class GDALPreprocessor(BasePreprocessor):
     """GDAL implementation of preprocessing operations."""
 
     def __init__(self):
-        gdal.UseExceptions()  # Enable exception handling
+        gdal.UseExceptions()
         self.spatial_ref = SpatialReference()
 
     def clean_field_names(self, dataset: Union[str, Path],
@@ -81,42 +76,84 @@ class GDALPreprocessor(BasePreprocessor):
         except Exception as e:
             raise ProcessingError(f"Error cleaning field names: {str(e)}")
 
+    def standardize_projection(self, dataset: Union[str, Path], target_epsg: Union[str, int], in_place: bool = False) -> \
+    Union[str, Path]:
+        """
+        Standardize the projection of a dataset to a specified coordinate system.
 
-    def standardize_projection(self, dataset: Union[str, Path], target_region: Union[str, int], in_place: bool = False) -> Union[str, Path]:
+        Args:
+            dataset: Path to input dataset
+            target_epsg: EPSG code or string identifier for the target coordinate system
+            in_place: Whether to modify the input dataset or create a new one
+
+        Returns:
+            Path to processed dataset
+        """
         try:
-            epsg_code = get_epsg_code(target_region)
-
+            epsg_code = get_epsg_code(target_epsg)
             input_path = Path(dataset)
-            if in_place:
-                # Create a temporary file
-                with tempfile.NamedTemporaryFile(delete=False, suffix=input_path.suffix) as tmp:
-                    temp_output = Path(tmp.name)
-            else:
-                # Create output file with '_reprojected' suffix
-                temp_output = input_path.with_name(f"{input_path.stem}_reprojected{input_path.suffix}")
-
-            # Set up ogr2ogr command
-            cmd = [
-                'ogr2ogr',
-                '-f', 'ESRI Shapefile' if input_path.suffix.lower() == '.shp' else 'GeoJSON',
-                '-s_srs', f'EPSG:{epsg_code}',
-                '-t_srs', f'EPSG:{epsg_code}',
-                str(temp_output),
-                str(input_path)
-            ]
-
-            # Run ogr2ogr command
-            subprocess.run(cmd, check=True)
 
             if in_place:
-                # Replace the original file with the temporary file
-                shutil.move(str(temp_output), str(input_path))
-                return input_path
+                output_path = input_path
             else:
-                return temp_output
+                output_path = input_path.with_name(f"{input_path.stem}_reprojected{input_path.suffix}")
+
+            # Open the input dataset
+            ds = ogr.Open(str(input_path), 0)
+            if ds is None:
+                raise ProcessingError(f"Could not open dataset: {dataset}")
+
+            # Create the output dataset
+            driver = ogr.GetDriverByName(ds.GetDriver().GetName())
+            out_ds = driver.CreateDataSource(str(output_path))
+
+            # Create the target spatial reference
+            target_srs = osr.SpatialReference()
+            target_srs.ImportFromEPSG(epsg_code)
+
+            # Process each layer
+            for layer in ds:
+                source_srs = layer.GetSpatialRef()
+
+                if source_srs is None:
+                    logger.warning(f"Source layer has no defined CRS. Assuming EPSG:{epsg_code}")
+                    source_srs = target_srs
+
+                # Create coordinate transformation
+                transform = osr.CoordinateTransformation(source_srs, target_srs)
+
+                # Create the output layer
+                out_layer = out_ds.CreateLayer(layer.GetName(), target_srs, layer.GetGeomType())
+                layer_defn = layer.GetLayerDefn()
+
+                # Copy field definitions
+                for i in range(layer_defn.GetFieldCount()):
+                    out_layer.CreateField(layer_defn.GetFieldDefn(i))
+
+                # Process features
+                for feature in layer:
+                    geom = feature.GetGeometryRef()
+                    if geom is not None:
+                        geom.Transform(transform)
+
+                    out_feature = ogr.Feature(out_layer.GetLayerDefn())
+                    out_feature.SetGeometry(geom)
+
+                    # Copy attributes
+                    for i in range(layer_defn.GetFieldCount()):
+                        out_feature.SetField(layer_defn.GetFieldDefn(i).GetNameRef(), feature.GetField(i))
+
+                    out_layer.CreateFeature(out_feature)
+                    out_feature = None
+
+            ds = None
+            out_ds = None
+
+            logger.info(f"Standardized projection to EPSG:{epsg_code} in {output_path}")
+            return output_path
 
         except Exception as e:
-            raise RuntimeError(f"Error during reprojection: {str(e)}")
+            raise ProcessingError(f"Error standardizing projection: {str(e)}")
 
     def repair_geometry(self, dataset: Union[str, Path],
                         in_place: bool = False) -> Union[str, Path]:
@@ -154,3 +191,62 @@ class GDALPreprocessor(BasePreprocessor):
 
         except Exception as e:
             raise ProcessingError(f"Error repairing geometries: {str(e)}")
+
+    def ensure_2d_geometry(self, dataset: Union[str, Path],
+                           in_place: bool = False) -> Union[str, Path]:
+        """
+        Ensure all geometries in the dataset are 2D.
+
+        Args:
+            dataset: Path to input dataset
+            in_place: Whether to modify the input dataset or create a new one
+
+        Returns:
+            Path to processed dataset
+        """
+        try:
+            input_path = Path(dataset)
+            if not in_place:
+                output_path = input_path.with_name(f"{input_path.stem}_2d{input_path.suffix}")
+            else:
+                output_path = input_path
+
+            ds = ogr.Open(str(input_path), 0)
+            if ds is None:
+                raise ProcessingError(f"Could not open dataset: {dataset}")
+
+            driver = ogr.GetDriverByName(ds.GetDriver().GetName())
+            out_ds = driver.CreateDataSource(str(output_path))
+
+            for layer in ds:
+                out_layer = out_ds.CreateLayer(layer.GetName(), layer.GetSpatialRef(), layer.GetGeomType())
+                layer_defn = layer.GetLayerDefn()
+
+                # Copy field definitions
+                for i in range(layer_defn.GetFieldCount()):
+                    out_layer.CreateField(layer_defn.GetFieldDefn(i))
+
+                # Process features
+                for feature in layer:
+                    geom = feature.GetGeometryRef()
+                    if geom is not None:
+                        geom = ogr.ForceToLineString(geom)
+
+                    out_feature = ogr.Feature(out_layer.GetLayerDefn())
+                    out_feature.SetGeometry(geom)
+
+                    # Copy attributes
+                    for i in range(layer_defn.GetFieldCount()):
+                        out_feature.SetField(layer_defn.GetFieldDefn(i).GetNameRef(), feature.GetField(i))
+
+                    out_layer.CreateFeature(out_feature)
+                    out_feature = None
+
+            ds = None
+            out_ds = None
+
+            logger.info(f"Ensured 2D geometries in {output_path}")
+            return output_path
+
+        except Exception as e:
+            raise ProcessingError(f"Error ensuring 2D geometries: {str(e)}")
