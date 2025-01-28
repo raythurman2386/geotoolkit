@@ -12,7 +12,7 @@ from ...utils.read_epsg import get_epsg_code
 logger = setup_logger(
     "gdal_processor",
     log_level="INFO",
-    log_dir=Path(__file__).parent / 'logs',
+    log_dir=Path(__file__).parent.parent / "logs",
 )
 
 
@@ -23,15 +23,16 @@ class GDALPreprocessor(BasePreprocessor):
         gdal.UseExceptions()
         self.spatial_ref = SpatialReference()
 
-    def clean_field_names(self, dataset: Union[str, Path],
-                          exclude_fields: Optional[List[str]] = None) -> Union[str, Path]:
+    def clean_field_names(
+        self, dataset: Union[str, Path], exclude_fields: Optional[List[str]] = None
+    ) -> Union[str, Path]:
         """
         Clean field names using GDAL.
-        
+
         Args:
             dataset: Path to input dataset
             exclude_fields: Fields to exclude from cleaning
-            
+
         Returns:
             Path to processed dataset
         """
@@ -53,9 +54,9 @@ class GDALPreprocessor(BasePreprocessor):
                     continue
 
                 # Clean field name: remove special chars, replace spaces
-                new_name = re.sub(r'[^a-zA-Z0-9_]', '_', old_name)
-                new_name = re.sub(r'_+', '_', new_name)  # Remove multiple underscores
-                new_name = new_name.strip('_').lower()
+                new_name = re.sub(r"[^a-zA-Z0-9_]", "_", old_name)
+                new_name = re.sub(r"_+", "_", new_name)  # Remove multiple underscores
+                new_name = new_name.strip("_").lower()
 
                 if new_name != old_name:
                     field_mapping[old_name] = new_name
@@ -64,9 +65,11 @@ class GDALPreprocessor(BasePreprocessor):
             for old_name, new_name in field_mapping.items():
                 layer.AlterFieldDefn(
                     layer_defn.GetFieldIndex(old_name),
-                    ogr.FieldDefn(new_name, layer_defn.GetFieldDefn(
-                        layer_defn.GetFieldIndex(old_name)).GetType()),
-                    ogr.ALTER_NAME_FLAG
+                    ogr.FieldDefn(
+                        new_name,
+                        layer_defn.GetFieldDefn(layer_defn.GetFieldIndex(old_name)).GetType(),
+                    ),
+                    ogr.ALTER_NAME_FLAG,
                 )
 
             ds = None  # Close dataset
@@ -76,8 +79,9 @@ class GDALPreprocessor(BasePreprocessor):
         except Exception as e:
             raise ProcessingError(f"Error cleaning field names: {str(e)}")
 
-    def standardize_projection(self, dataset: Union[str, Path], target_epsg: Union[str, int], in_place: bool = False) -> \
-    Union[str, Path]:
+    def standardize_projection(
+        self, dataset: Union[str, Path], target_epsg: Union[str, int], in_place: bool = False
+    ):
         """
         Standardize the projection of a dataset to a specified coordinate system.
 
@@ -96,7 +100,9 @@ class GDALPreprocessor(BasePreprocessor):
             if in_place:
                 output_path = input_path
             else:
-                output_path = input_path.with_name(f"{input_path.stem}_reprojected{input_path.suffix}")
+                output_path = input_path.with_name(
+                    f"{input_path.stem}_reprojected{input_path.suffix}"
+                )
 
             # Open the input dataset
             ds = ogr.Open(str(input_path), 0)
@@ -141,7 +147,9 @@ class GDALPreprocessor(BasePreprocessor):
 
                     # Copy attributes
                     for i in range(layer_defn.GetFieldCount()):
-                        out_feature.SetField(layer_defn.GetFieldDefn(i).GetNameRef(), feature.GetField(i))
+                        out_feature.SetField(
+                            layer_defn.GetFieldDefn(i).GetNameRef(), feature.GetField(i)
+                        )
 
                     out_layer.CreateFeature(out_feature)
                     out_feature = None
@@ -155,15 +163,16 @@ class GDALPreprocessor(BasePreprocessor):
         except Exception as e:
             raise ProcessingError(f"Error standardizing projection: {str(e)}")
 
-    def repair_geometry(self, dataset: Union[str, Path],
-                        in_place: bool = False) -> Union[str, Path]:
+    def repair_geometry(
+        self, dataset: Union[str, Path], in_place: bool = False
+    ) -> Union[str, Path]:
         """
         Fix common geometry errors using GDAL.
-        
+
         Args:
             dataset: Path to input dataset
             in_place: Whether to modify the input dataset or create new one
-            
+
         Returns:
             Path to processed dataset
         """
@@ -192,8 +201,9 @@ class GDALPreprocessor(BasePreprocessor):
         except Exception as e:
             raise ProcessingError(f"Error repairing geometries: {str(e)}")
 
-    def ensure_2d_geometry(self, dataset: Union[str, Path],
-                           in_place: bool = False) -> Union[str, Path]:
+    def ensure_2d_geometry(
+        self, dataset: Union[str, Path], in_place: bool = False
+    ) -> Union[str, Path]:
         """
         Ensure all geometries in the dataset are 2D.
 
@@ -219,7 +229,9 @@ class GDALPreprocessor(BasePreprocessor):
             out_ds = driver.CreateDataSource(str(output_path))
 
             for layer in ds:
-                out_layer = out_ds.CreateLayer(layer.GetName(), layer.GetSpatialRef(), layer.GetGeomType())
+                out_layer = out_ds.CreateLayer(
+                    layer.GetName(), layer.GetSpatialRef(), layer.GetGeomType()
+                )
                 layer_defn = layer.GetLayerDefn()
 
                 # Copy field definitions
@@ -237,7 +249,9 @@ class GDALPreprocessor(BasePreprocessor):
 
                     # Copy attributes
                     for i in range(layer_defn.GetFieldCount()):
-                        out_feature.SetField(layer_defn.GetFieldDefn(i).GetNameRef(), feature.GetField(i))
+                        out_feature.SetField(
+                            layer_defn.GetFieldDefn(i).GetNameRef(), feature.GetField(i)
+                        )
 
                     out_layer.CreateFeature(out_feature)
                     out_feature = None

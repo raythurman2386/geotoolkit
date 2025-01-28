@@ -7,6 +7,9 @@ from .utils.logger import setup_logger
 from .engines.gdal_engine.preprocessor import GDALPreprocessor
 
 
+global logger
+
+
 class Preprocessor:
     """High-level interface for preprocessing operations"""
 
@@ -24,8 +27,12 @@ class PreprocessorFactory:
 
     @staticmethod
     def create(engine: str):
-        if engine.lower() == 'gdal':
+        if engine.lower() == "gdal":
             return GDALPreprocessor()
+        elif engine == "arcpy":
+            from .engines.arcpy_engine.preprocessor import ArcPyPreprocessor
+
+            return ArcPyPreprocessor()
         else:
             raise ValueError(f"Unsupported engine: {engine}")
 
@@ -44,11 +51,11 @@ def GeoToolKitContext(**kwargs):
 
 
 def initialize(
-        preferred_engine: str = 'auto',
-        log_level: str = "INFO",
-        log_dir: Optional[Path] = None,
-        workspace: Optional[Path] = None,
-        config_file: Optional[Path] = None
+    preferred_engine: str = "auto",
+    log_level: str = "INFO",
+    log_dir: Optional[Path] = None,
+    workspace: Optional[Path] = None,
+    config_file: Optional[Path] = None,
 ) -> None:
     """Initialize GeoToolKit with custom configuration"""
     config = ConfigManager()
@@ -57,17 +64,11 @@ def initialize(
         config.load_config(config_file)
 
     config.update_config(
-        preferred_engine=preferred_engine,
-        log_level=log_level,
-        log_dir=log_dir,
-        workspace=workspace
+        preferred_engine=preferred_engine, log_level=log_level, log_dir=log_dir, workspace=workspace
     )
 
-    global logger
     logger = setup_logger(
-        name="geotoolkit",
-        log_level=config.config.log_level,
-        log_dir=config.config.log_dir
+        name="geotoolkit", log_level=config.config.log_level, log_dir=config.config.log_dir
     )
 
     logger.info(f"GeoToolKit initialized with engine: {preferred_engine}")

@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import Dict, Union, Optional
 
+
 class SpatialReference:
     """Utility class for handling spatial references."""
 
@@ -10,9 +11,9 @@ class SpatialReference:
 
     def _load_regions(self) -> Dict:
         """Load regions from JSON file."""
-        regions_path = Path(__file__).parent.parent / 'regions.json'
+        regions_path = Path(__file__).parent.parent / "regions.json"
         try:
-            with open(regions_path, 'r') as f:
+            with open(regions_path, "r") as f:
                 return json.load(f)
         except FileNotFoundError:
             raise FileNotFoundError(f"Regions file not found at {regions_path}")
@@ -22,14 +23,14 @@ class SpatialReference:
         region = region.upper()
         if region not in self.regions:
             raise ValueError(f"Unknown region: {region}")
-        return self.regions[region]['proj4']
+        return self.regions[region]["proj4"]
 
     def get_epsg(self, region: str) -> int:
         """Get EPSG code for a region."""
         region = region.upper()
         if region not in self.regions:
             raise ValueError(f"Unknown region: {region}")
-        return self.regions[region]['epsg']
+        return self.regions[region]["epsg"]
 
     def get_region_info(self, region: str) -> Dict:
         """Get all information for a region."""

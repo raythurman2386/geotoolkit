@@ -6,6 +6,7 @@ import json
 from ..core.constants import DEFAULT_CONFIG, EngineType
 from ..core.exceptions import ConfigurationError
 
+
 @dataclass
 class GeoToolKitConfig:
     preferred_engine: str = DEFAULT_CONFIG["preferred_engine"]
@@ -24,14 +25,15 @@ class GeoToolKitConfig:
         }
 
     @classmethod
-    def from_dict(cls, config_dict: Dict[str, Any]) -> 'GeoToolKitConfig':
+    def from_dict(cls, config_dict: Dict[str, Any]) -> "GeoToolKitConfig":
         """Create config from dictionary"""
         # Convert string paths to Path objects
-        if 'log_dir' in config_dict and config_dict['log_dir']:
-            config_dict['log_dir'] = Path(config_dict['log_dir'])
-        if 'workspace' in config_dict and config_dict['workspace']:
-            config_dict['workspace'] = Path(config_dict['workspace'])
+        if "log_dir" in config_dict and config_dict["log_dir"]:
+            config_dict["log_dir"] = Path(config_dict["log_dir"])
+        if "workspace" in config_dict and config_dict["workspace"]:
+            config_dict["workspace"] = Path(config_dict["workspace"])
         return cls(**config_dict)
+
 
 class ConfigManager:
     _instance = None
@@ -53,7 +55,7 @@ class ConfigManager:
     def save_config(self, config_path: Path):
         """Save configuration to JSON file"""
         try:
-            with open(config_path, 'w') as f:
+            with open(config_path, "w") as f:
                 json.dump(self.config.to_dict(), f, indent=4)
         except Exception as e:
             raise ConfigurationError(f"Failed to save configuration: {str(e)}")
@@ -61,7 +63,7 @@ class ConfigManager:
     def load_config(self, config_path: Path):
         """Load configuration from JSON file"""
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 config_dict = json.load(f)
             self.config = GeoToolKitConfig.from_dict(config_dict)
         except Exception as e:
