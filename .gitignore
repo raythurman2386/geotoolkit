@@ -43,3 +43,4 @@ data/processed/*
 # Logs
 *.log
 .env
+*.gdb

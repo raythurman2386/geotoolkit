@@ -17,4 +17,5 @@ correct_geom = preprocessor.ensure_2d_geometry(geometry, False)
 
 arcpy_preprocessor = Preprocessor(engine="arcpy")
 arcpy_result = arcpy_preprocessor.clean_field_names(file)
-arcpy_projection = arcpy_preprocessor.standardize_projection(arcpy_result, 4326, False)
+arcpy_projection = arcpy_preprocessor.standardize_projection(arcpy_result, 4326)
+arcpy_repair = arcpy_preprocessor.repair_geometry(arcpy_result, False)
