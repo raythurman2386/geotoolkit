@@ -1,10 +1,12 @@
 # GeoToolKit
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation Status](https://readthedocs.org/projects/geotoolkit/badge/?version=latest)](https://geotoolkit.readthedocs.io/en/latest/?badge=latest)
 
 GeoToolKit is a comprehensive Python package that provides a unified interface for common GIS operations using both ArcPy and GDAL/Open Source implementations. It aims to simplify geospatial workflows while maintaining flexibility in choosing the underlying GIS engine.
+
+> Note: This package is still in development and is subject to change. As a small side project, I'm not planning on releasing a stable version....It works for me, so I'm just sharing it. :)
 
 ## 🚀 Features
 
@@ -21,7 +23,7 @@ GeoToolKit is a comprehensive Python package that provides a unified interface f
 ## 📋 Requirements
 
 ### Minimum Requirements
-- Python 3.8+
+- Python 3.10+
 - GDAL 3.0+ (for GDAL engine)
 - ArcGIS Pro 2.5+ (for ArcPy engine)
 
@@ -32,7 +34,7 @@ GeoToolKit is a comprehensive Python package that provides a unified interface f
 - Rasterio
 
 ## ⚡️ Quick Installation
-
+> Note: The current install process is a bit buggy, and needs some attention. Currently I would recommend following the typical development setup process.
 ```bash
 # Basic installation with GDAL support
 pip install geotoolkit
@@ -109,11 +111,7 @@ config.update_config(
 
 ## 📚 Documentation
 
-Comprehensive documentation is available at [readthedocs.io](https://geotoolkit.readthedocs.io/).
-
-- [User Guide](https://geotoolkit.readthedocs.io/en/latest/user_guide.html)
-- [API Reference](https://geotoolkit.readthedocs.io/en/latest/api.html)
-- [Examples](https://geotoolkit.readthedocs.io/en/latest/examples.html)
+Comprehensive documentation will eventually be available somewhere.
 
 ## 🧪 Testing
 
@@ -144,7 +142,7 @@ source venv/bin/activate  # Linux/Mac
 .\venv\Scripts\activate  # Windows
 
 # Install development dependencies
-pip install -e ".[dev]"
+pip install -r requirements.txt
 ```
 
 ## 📝 License
@@ -153,15 +151,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🎯 Roadmap
 
-- [ ] Add support for cloud-based GIS services
+- [ ] Correct bugs and improve existing features (Always ongoing)
+- [ ] Implement testing and code coverage
+- [ ] Better workspace support and improvements
+- [ ] Add support for automated documentation
 - [ ] Implement machine learning integration
 - [ ] Add support for real-time data processing
-- [ ] Develop web service capabilities
-- [ ] Create GUI interface
 
 ## 📫 Contact
 
-- Project Maintainer: [Your Name](mailto:raymondthurman5@gmail.com)
+- Project Maintainer: [Ray Thurman](mailto:raymondthurman5@gmail.com)
 - Project Homepage: https://github.com/raythurman2386/geotoolkit
 
 ## 🙏 Acknowledgments
@@ -172,4 +171,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Made with ❤️ by [Ray Thurman]
+Made with ❤️ by [Ray Thurman](mailto:raymondthurman5@gmail.com)
