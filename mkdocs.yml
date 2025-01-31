@@ -1,0 +1,61 @@
+site_name: GeoToolKit Documentation
+site_description: Documentation for GeoToolKit - A unified interface for GIS operations
+repo_url: https://github.com/raythurman2386/geotoolkit
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quick-start.md
+  - User Guide:
+    - Configuration: user-guide/configuration.md
+    - Preprocessor: user-guide/preprocessor.md
+  # - API Reference:
+  #   - Core: api/core.md
+  #   - Engines: api/engines.md
+  #   - Interfaces: api/interfaces.md
+  #   - Utils: api/utils.md
+  - Contributing: contributing.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [geotoolkit]
+          options:
+            show_source: true

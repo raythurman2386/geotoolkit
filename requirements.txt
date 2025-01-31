@@ -3,3 +3,9 @@ geopandas==1.0.1
 rasterio==1.4.3
 fiona==1.10.1
 shapely==2.0.6
+
+# Documentation
+mkdocs==1.5.3
+mkdocs-material==9.5.3
+mkdocstrings==0.24.0
+mkdocstrings-python==1.7.5
