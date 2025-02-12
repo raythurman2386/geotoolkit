@@ -264,3 +264,53 @@ class GDALPreprocessor(BasePreprocessor):
 
         except Exception as e:
             raise ProcessingError(f"Error ensuring 2D geometries: {str(e)}")
+
+    def calculate_sinuosity(self, dataset: Union[str, Path], field_name: str):
+        """
+        Calculate sinuosity for line geometries in the dataset.
+        """
+        try:
+            ds = ogr.Open(str(dataset), 1)  # Open for writing
+            if ds is None:
+                raise ProcessingError(f"Could not open dataset: {dataset}")
+
+            layer = ds.GetLayer()
+            srs = layer.GetSpatialRef()
+            epsg_code = srs.GetAuthorityCode(None)
+            logger.info(f"Calculating sinuosity with EPSG:{epsg_code}")
+
+            # Add the field for sinuosity values if it doesn't exist
+            if layer.FindFieldIndex(field_name, 1) == -1:
+                field_defn = ogr.FieldDefn(field_name, ogr.OFTReal)
+                layer.CreateField(field_defn)
+
+            for feature in layer:
+                geom = feature.GetGeometryRef()
+                if geom is None or geom.GetGeometryType() != ogr.wkbLineString:
+                    continue
+
+                # Compute actual path length
+                path_length = geom.Length()
+
+                # Compute straight-line distance (start -> end)
+                start_point = geom.GetPoint(0)  # (x, y, z)
+                end_point = geom.GetPoint(geom.GetPointCount() - 1)
+
+                straight_distance = ((start_point[0] - end_point[0]) ** 2 +
+                                     (start_point[1] - end_point[1]) ** 2) ** 0.5
+
+                # Calculate sinuosity (handling division by zero)
+                if straight_distance > 0:
+                    sinuosity = path_length / straight_distance
+                else:
+                    sinuosity = 1  # Undefined, default to 1
+
+                feature.SetField(field_name, sinuosity)
+                layer.SetFeature(feature)
+
+            ds = None  # Close dataset
+            logger.info(f"Calculated sinuosity for {dataset}")
+            return dataset
+
+        except Exception as e:
+            raise ProcessingError(f"Error calculating sinuosity: {str(e)}")

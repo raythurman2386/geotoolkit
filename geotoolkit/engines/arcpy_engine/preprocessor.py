@@ -5,6 +5,7 @@ import re
 from ...core.base import BasePreprocessor
 from ...core.exceptions import ProcessingError
 from ... import setup_logger
+from ...tools.calculate_sinuosity import calculate_sinuosity_value
 from ...utils.read_epsg import get_epsg_code
 
 logger = setup_logger(
@@ -129,3 +130,33 @@ class ArcPyPreprocessor(BasePreprocessor):
 
         except Exception as e:
             raise ProcessingError(f"Error repairing geometries: {str(e)}")
+
+    def calculate_sinuosity(self, dataset: Union[str, Path], output_field: str = "Sinuosity") -> str:
+        """
+        Adds a new field to store sinuosity values and calculates sinuosity for each line feature.
+        """
+        try:
+            input_path = str(dataset)
+
+            # Add the Sinuosity field if it doesn't exist
+            fields = [field.name for field in arcpy.ListFields(input_path)]
+            if output_field not in fields:
+                arcpy.AddField_management(input_path, output_field, "DOUBLE")
+
+            # Update the sinuosity values
+            with arcpy.da.UpdateCursor(input_path, ["SHAPE@", output_field]) as cursor:
+                for row in cursor:
+                    geometry = row[0]  # SHAPE@
+                    if geometry is None or geometry.length == 0:
+                        row[1] = 1
+                    else:
+                        row[1] = calculate_sinuosity_value(geometry)
+
+                    cursor.updateRow(row)
+
+            logger.info(f"Calculated sinuosity for {input_path}")
+            return input_path
+
+        except Exception as e:
+            logger.error(f"Error calculating sinuosity: {str(e)}")
+            raise ProcessingError(f"Error calculating sinuosity: {str(e)}")
