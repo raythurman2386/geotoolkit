@@ -1,11 +1,10 @@
-from typing import Optional
-from pathlib import Path
 from contextlib import contextmanager
+from pathlib import Path
+from typing import Optional
 
+from .engines.gdal_engine.preprocessor import GDALPreprocessor
 from .utils.config import ConfigManager
 from .utils.logger import setup_logger
-from .engines.gdal_engine.preprocessor import GDALPreprocessor
-
 
 global logger
 
@@ -64,11 +63,16 @@ def initialize(
         config.load_config(config_file)
 
     config.update_config(
-        preferred_engine=preferred_engine, log_level=log_level, log_dir=log_dir, workspace=workspace
+        preferred_engine=preferred_engine,
+        log_level=log_level,
+        log_dir=log_dir,
+        workspace=workspace,
     )
 
     logger = setup_logger(
-        name="geotoolkit", log_level=config.config.log_level, log_dir=config.config.log_dir
+        name="geotoolkit",
+        log_level=config.config.log_level,
+        log_dir=config.config.log_dir,
     )
 
     logger.info(f"GeoToolKit initialized with engine: {preferred_engine}")

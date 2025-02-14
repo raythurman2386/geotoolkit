@@ -1,5 +1,6 @@
-from geotoolkit import initialize, Preprocessor
 from pathlib import Path
+
+from geotoolkit import Preprocessor, initialize
 
 initialize(
     preferred_engine="auto",
@@ -9,7 +10,7 @@ initialize(
 )
 
 # preprocessor = Preprocessor(engine="gdal")
-file = "oregon_trail.shp"
+file = "./examples/route_66.shp"
 # result = preprocessor.clean_field_names(file)
 # projection = preprocessor.standardize_projection(result, 4326, False)
 # geometry = preprocessor.repair_geometry(projection, False)
